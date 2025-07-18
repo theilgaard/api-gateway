@@ -71,7 +71,7 @@ test_endpoint "/api/unknown/1" 404 "Bearer test-api-key" "Non-existent service"
 echo -e "${YELLOW}Testing: Rate limiting${NC}"
 echo "Making multiple requests to trigger rate limiting..."
 for i in {1..11}; do
-    if [ $i -eq 11 ]; then
+    if [ "$i" -eq 11 ]; then
         response=$(curl -s -w "%{http_code}" -o /tmp/api_response.txt -H "Authorization: Bearer rate-limit-test" "$BASE_URL/api/users")
         if [ "$response" -eq 429 ]; then
             echo -e "${GREEN}✓ Success: Rate limiting working correctly${NC}"

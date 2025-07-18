@@ -131,8 +131,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y nginx
         
-        # Test nginx config syntax (with modifications for testing)
-        sudo nginx -t -c /dev/stdin << 'EOF'
+        # Create a test nginx configuration file
+        cat > /tmp/nginx_test.conf << 'EOF'
         events {
             worker_connections 1024;
         }
@@ -153,6 +153,9 @@ jobs:
             }
         }
         EOF
+        
+        # Test nginx config syntax
+        sudo nginx -t -c /tmp/nginx_test.conf
         
         echo "✓ Basic nginx configuration syntax OK"
     
