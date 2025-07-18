@@ -1,0 +1,75 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for common issues
+      run: |
+        # Check for TODO/FIXME comments
+        echo "Checking for TODO/FIXME comments..."
+        grep -rn "TODO\|FIXME" . --exclude-dir=.git || echo "No TODO/FIXME found"
+        
+        # Check for hardcoded secrets patterns
+        echo "Checking for potential secrets..."
+        grep -rn "password\|secret\|key\|token" . --exclude-dir=.git --exclude="*.md" --exclude="*.yml" || echo "No obvious secrets found"
+        
+        # Check file permissions
+        echo "Checking file permissions..."
+        find . -name "*.sh" -not -perm -111 -exec echo "Script not executable: {}" \;
+    
+    - name: Validate configuration files
+      run: |
+        # Check YAML syntax
+        python3 -c "
+        import yaml
+        import sys
+        import os
+        
+        yaml_files = []
+        for root, dirs, files in os.walk('.'):
+            if '.git' in dirs:
+                dirs.remove('.git')
+            for file in files:
+                if file.endswith(('.yml', '.yaml')):
+                    yaml_files.append(os.path.join(root, file))
+        
+        for file in yaml_files:
+            try:
+                with open(file, 'r') as f:
+                    yaml.safe_load(f)
+                print(f'✓ {file}')
+            except Exception as e:
+                print(f'✗ {file}: {e}')
+                sys.exit(1)
+        "
+    
+    - name: File structure check
+      run: |
+        # Ensure required files exist
+        required_files=(
+          "README.md"
+          "Dockerfile"
+          "docker-compose.yml"
+          "nginx/nginx.conf"
+          "scripts/test.sh"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [[ ! -f "$file" ]]; then
+            echo "❌ Required file missing: $file"
+            exit 1
+          else
+            echo "✅ Found: $file"
+          fi
+        done

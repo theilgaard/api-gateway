@@ -54,19 +54,25 @@ function TestGateway:setUp()
     ngx.status = 200
     ngx.var.uri = "/api/users"
     ngx.var.remote_addr = "127.0.0.1"
-    ngx.shared.api_gateway_cache = {}
-    ngx.shared.api_rate_limiting = {}
     
-    -- Add methods to our mock shared dictionaries
-    ngx.shared.api_gateway_cache.get = function(self, key) return self[key] end
-    ngx.shared.api_gateway_cache.set = function(self, key, value, ttl) self[key] = value end
+    -- Create mock shared dictionaries with methods
+    ngx.shared.api_gateway_cache = {
+        data = {},
+        get = function(self, key) return self.data[key] end,
+        set = function(self, key, value, ttl) self.data[key] = value end
+    }
     
-    ngx.shared.api_rate_limiting.get = function(self, key) return self[key] end
-    ngx.shared.api_rate_limiting.set = function(self, key, value, ttl) self[key] = value end
-    ngx.shared.api_rate_limiting.incr = function(self, key, value, init, ttl)
-        self[key] = (self[key] or 0) + value
-        return self[key], nil, false
-    end
+    ngx.shared.api_rate_limiting = {
+        data = {},
+        get = function(self, key) return self.data[key] end,
+        set = function(self, key, value, ttl) self.data[key] = value end,
+        incr = function(self, key, value, init, ttl)
+            local current = self.data[key] or init or 0
+            local new_val = current + value
+            self.data[key] = new_val
+            return new_val, nil, false
+        end
+    }
 end
 
 -- Test authentication function
@@ -105,11 +111,11 @@ function TestGateway:test_authenticate()
     lu.assertEquals(result, false)
     
     -- Test cache behavior
-    ngx.shared.api_gateway_cache["token123"] = "valid"
+    ngx.shared.api_gateway_cache.data["token123"] = "valid"
     result, err = utils.authenticate({authorization = "Bearer token123"})
     lu.assertEquals(result, true)
     
-    ngx.shared.api_gateway_cache["token456"] = "invalid"
+    ngx.shared.api_gateway_cache.data["token456"] = "invalid"
     result, err = utils.authenticate({authorization = "Bearer token456"})
     lu.assertEquals(result, false)
 end
@@ -119,11 +125,11 @@ function TestGateway:test_rate_limit()
     -- Test with fresh identifier
     local result = utils.check_rate_limit("Bearer test-token")
     lu.assertEquals(result, true)
-    lu.assertEquals(ngx.shared.api_rate_limiting["Bearer test-token"], 1)
+    lu.assertEquals(ngx.shared.api_rate_limiting.data["Bearer test-token"], 1)
     
     -- Simulate 9 more requests (total 10)
     for i = 2, 10 do
-        ngx.shared.api_rate_limiting["Bearer test-token"] = i
+        ngx.shared.api_rate_limiting.data["Bearer test-token"] = i
     end
     
     -- Should still be allowed (at limit)
@@ -131,7 +137,7 @@ function TestGateway:test_rate_limit()
     lu.assertEquals(result, true)
     
     -- One more request should be rate limited
-    ngx.shared.api_rate_limiting["Bearer test-token"] = 11
+    ngx.shared.api_rate_limiting.data["Bearer test-token"] = 11
     result = utils.check_rate_limit("Bearer test-token")
     lu.assertEquals(result, false)
 end

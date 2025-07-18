@@ -1,5 +1,9 @@
 # Nginx + Lua API Gateway
 
+[![CI](https://github.com/theilgaard/api-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/theilgaard/api-gateway/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/theilgaard/api-gateway/actions/workflows/code-quality.yml/badge.svg)](https://github.com/theilgaard/api-gateway/actions/workflows/code-quality.yml)
+[![Build and Release](https://github.com/theilgaard/api-gateway/actions/workflows/release.yml/badge.svg)](https://github.com/theilgaard/api-gateway/actions/workflows/release.yml)
+
 A flexible, lightweight API Gateway implementation using Nginx and Lua.
 
 ## Features
