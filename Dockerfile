@@ -1,6 +1,7 @@
 FROM openresty/openresty:alpine
 
 # Install required dependencies
+# hadolint ignore=DL3018
 RUN apk add --no-cache curl bash
 
 # Set working directory
